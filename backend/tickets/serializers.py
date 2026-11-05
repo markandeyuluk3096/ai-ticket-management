@@ -7,11 +7,10 @@ from .models import Ticket
 
 class TicketSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
-    category_id = serializers.PrimaryKeyRelatedField(
-        source='category', queryset=Category.objects.filter(is_active=True), write_only=True
-    )
+    category_id = serializers.PrimaryKeyRelatedField(source='category', queryset=Category.objects.filter(is_active=True), write_only=True)
     customer_username = serializers.CharField(source='customer.username', read_only=True)
     assigned_agent_username = serializers.CharField(source='assigned_agent.username', read_only=True)
+    is_sla_overdue = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Ticket
@@ -19,12 +18,14 @@ class TicketSerializer(serializers.ModelSerializer):
             'id', 'ticket_number', 'subject', 'description', 'category_id',
             'category_name', 'customer', 'customer_username', 'assigned_agent',
             'assigned_agent_username', 'status', 'priority', 'created_at',
-            'updated_at', 'resolved_at',
+            'updated_at', 'resolved_at', 'sla_due_at', 'sla_breached_at',
+            'is_sla_overdue',
         ]
         read_only_fields = [
             'id', 'ticket_number', 'customer', 'customer_username',
             'assigned_agent', 'assigned_agent_username', 'status', 'priority',
-            'created_at', 'updated_at', 'resolved_at',
+            'created_at', 'updated_at', 'resolved_at', 'sla_due_at',
+            'sla_breached_at', 'is_sla_overdue',
         ]
 
     def create(self, validated_data):
@@ -35,12 +36,7 @@ class TicketSerializer(serializers.ModelSerializer):
             locked_category.next_ticket_number = sequence + 1
             locked_category.save(update_fields=['next_ticket_number'])
             ticket_number = f'{locked_category.code}-{timezone.localdate().year}-{sequence:04d}'
-            return Ticket.objects.create(
-                category=locked_category,
-                ticket_number=ticket_number,
-                customer=self.context['request'].user,
-                **validated_data,
-            )
+            return Ticket.objects.create(category=locked_category, ticket_number=ticket_number, customer=self.context['request'].user, **validated_data)
 
 
 class TicketStaffUpdateSerializer(serializers.ModelSerializer):

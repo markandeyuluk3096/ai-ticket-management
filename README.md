@@ -41,6 +41,8 @@ Django REST Framework backend for a customer support ticket system.
 - `GET/PATCH /api/tickets/<id>/` — staff update status, priority, and assignment
 - `GET/POST /api/tickets/<id>/messages/` — ticket conversation
 
+Ticket conversations accept optional attachments up to 5 MB with `.pdf`, `.png`, `.jpg`, `.jpeg`, `.txt`, and `.docx` extensions. Configure private object storage and malware scanning before production deployment.
+
 Create categories in Django Admin before customers submit tickets. Category codes must be unique, short identifiers such as `TECH` or `BILL`.
 
 Ticket numbers are generated under a database transaction and category row lock, in the format `CODE-YEAR-0001`. For databases that do not support effective row-level locking, verify concurrency behavior before production use.

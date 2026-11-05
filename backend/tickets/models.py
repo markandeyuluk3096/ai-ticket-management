@@ -31,9 +31,9 @@ class Ticket(models.Model):
     class Meta:
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['status', 'priority']),
-            models.Index(fields=['customer', 'created_at']),
-            models.Index(fields=['assigned_agent', 'status']),
+            models.Index(fields=['status', 'priority'], name='tkt_status_prio_idx'),
+            models.Index(fields=['customer', 'created_at'], name='tkt_customer_date_idx'),
+            models.Index(fields=['assigned_agent', 'status'], name='tkt_agent_status_idx'),
         ]
 
     def __str__(self):

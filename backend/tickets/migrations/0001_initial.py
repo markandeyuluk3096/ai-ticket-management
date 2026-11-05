@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
             ],
             options={'ordering': ['-created_at']},
         ),
-        migrations.AddIndex(model_name='ticket', index=models.Index(fields=['status', 'priority'], name='tickets_tic_status_3d4f6a_idx')),
-        migrations.AddIndex(model_name='ticket', index=models.Index(fields=['customer', 'created_at'], name='tickets_tic_custome_9a6c51_idx')),
-        migrations.AddIndex(model_name='ticket', index=models.Index(fields=['assigned_agent', 'status'], name='tickets_tic_assigne_1b6f8c_idx')),
+        migrations.AddIndex(model_name='ticket', index=models.Index(fields=['status', 'priority'], name='tkt_status_prio_idx')),
+        migrations.AddIndex(model_name='ticket', index=models.Index(fields=['customer', 'created_at'], name='tkt_customer_date_idx')),
+        migrations.AddIndex(model_name='ticket', index=models.Index(fields=['assigned_agent', 'status'], name='tkt_agent_status_idx')),
     ]

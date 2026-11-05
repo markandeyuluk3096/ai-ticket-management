@@ -1,13 +1,26 @@
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.db import models
-from tickets.models import Ticket
+from tickets.models import Ticket, validate_attachment
+
+
+def message_attachment_path(instance, filename):
+    extension = Path(filename).suffix.lower()
+    return f'message_attachments/{instance.ticket_id}/{uuid.uuid4().hex}{extension}'
 
 
 class Message(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='ticket_messages')
     body = models.TextField(blank=True)
-    attachment = models.FileField(upload_to='ticket_attachments/%Y/%m/', blank=True, null=True)
+    attachment = models.FileField(
+        upload_to=message_attachment_path,
+        validators=[validate_attachment],
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

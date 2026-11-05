@@ -1,4 +1,3 @@
-
 """
 Django settings for config project.
 """
@@ -133,7 +132,12 @@ AUTH_USER_MODEL = 'accounts.User'
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    'DEFAULT_THROTTLE_RATES': {'ai_analysis': '5/hour', 'ai_chat': '20/hour'},
+    'DEFAULT_THROTTLE_RATES': {
+        'ai_analysis': '5/hour',
+        'ai_chat': '20/hour',
+        'register': '5/hour',
+        'login': '10/minute',
+    },
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),

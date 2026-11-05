@@ -1,11 +1,16 @@
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 
 User = get_user_model()
 
 
 class CustomerRegistrationSecurityTests(APITestCase):
     url = '/api/accounts/register/'
+
+    def setUp(self):
+        # Keep registration tests independent of cached throttle counters.
+        cache.clear()
 
     def test_registration_requires_email(self):
         response = self.client.post(self.url, {
@@ -39,3 +44,29 @@ class CustomerRegistrationSecurityTests(APITestCase):
         user = User.objects.get(username='new_customer')
         self.assertEqual(user.role, 'customer')
         self.assertTrue(user.check_password(password))
+
+
+class AuthenticationRateLimitTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_registration_is_limited_to_five_requests_per_hour(self):
+        payload = {
+            'username': 'rate_limited_customer',
+            'email': 'rate-limited@example.com',
+            'password': 'Violet-River!2026-Strong',
+            'confirm_password': 'Violet-River!2026-Strong',
+        }
+        for _ in range(5):
+            self.client.post('/api/accounts/register/', payload, format='json')
+
+        response = self.client.post('/api/accounts/register/', payload, format='json')
+        self.assertEqual(response.status_code, 429)
+
+    def test_login_is_limited_to_ten_requests_per_minute(self):
+        payload = {'username': 'unknown-user', 'password': 'Wrong-Password-2026!'}
+        for _ in range(10):
+            self.client.post('/api/accounts/login/', payload, format='json')
+
+        response = self.client.post('/api/accounts/login/', payload, format='json')
+        self.assertEqual(response.status_code, 429)

@@ -5,14 +5,17 @@ from .serializers import CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.throttling import ScopedRateThrottle
 from .serializers import RegisterSerializer
 from rest_framework_simplejwt.views import TokenBlacklistView
 
 
 class RegisterAPIView(APIView):
+    permission_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'register'
 
     def post(self, request):
-
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -36,21 +39,21 @@ class RegisterAPIView(APIView):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+
 class CustomLoginAPIView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
+
 
 class CustomerProfileAPIView(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         serializer = ProfileSerializer(request.user)
-
         return Response(serializer.data)
 
     def patch(self, request):
-
         serializer = ProfileSerializer(
             request.user,
             data=request.data,
@@ -65,6 +68,7 @@ class CustomerProfileAPIView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
 
 class CustomerLogoutAPIView(TokenBlacklistView):
     pass

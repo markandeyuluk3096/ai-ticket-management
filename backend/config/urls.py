@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),
     path('api/categories/', include('categories.urls')),
     path('api/tickets/', include('tickets.urls')),
+    path('api/tickets/', include('tickets.automation_urls')),
     path('api/faqs/', include('faqs.urls')),
     path('api/notifications/', include('notifications.urls')),
     path('api/feedback/', include('feedback.urls')),

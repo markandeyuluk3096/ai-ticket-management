@@ -1,9 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from categories.models import Category
-from .models import Ticket
+from .models import Ticket, TicketAttachment
 
 User = get_user_model()
 
@@ -38,10 +39,6 @@ class TicketAPITests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-from .models import TicketAttachment
-
-
 class TicketAutomationAPITests(APITestCase):
     def setUp(self):
         self.customer = User.objects.create_user(username='automation_customer', password='StrongPass123!')
@@ -70,5 +67,15 @@ class TicketAutomationAPITests(APITestCase):
 
     def test_customer_cannot_upload_executable(self):
         upload = SimpleUploadedFile('malware.exe', b'bad', content_type='application/octet-stream')
+        response = self.client.post(f'/api/tickets/{self.ticket.pk}/attachments/', {'file': upload}, format='multipart')
+        self.assertEqual(response.status_code, 400)
+
+    def test_customer_cannot_upload_non_pdf_renamed_as_pdf(self):
+        upload = SimpleUploadedFile('fake.pdf', b'this is not a PDF', content_type='application/pdf')
+        response = self.client.post(f'/api/tickets/{self.ticket.pk}/attachments/', {'file': upload}, format='multipart')
+        self.assertEqual(response.status_code, 400)
+
+    def test_customer_cannot_upload_invalid_docx(self):
+        upload = SimpleUploadedFile('fake.docx', b'not a zip document', content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         response = self.client.post(f'/api/tickets/{self.ticket.pk}/attachments/', {'file': upload}, format='multipart')
         self.assertEqual(response.status_code, 400)

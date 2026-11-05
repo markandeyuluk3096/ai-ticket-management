@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from categories.models import Category
@@ -22,7 +23,7 @@ class TicketAPITests(APITestCase):
             'category_id': self.category.pk,
         }, format='json')
         self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(response.data['ticket_number'], 'TECH-2026-0001')
+        self.assertEqual(response.data['ticket_number'], f'TECH-{timezone.localdate().year}-0001')
         self.assertEqual(response.data['customer'], self.customer.pk)
 
     def test_customer_only_sees_own_tickets(self):

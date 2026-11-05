@@ -1,9 +1,12 @@
-from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.db import models
+from datetime import timedelta
 from pathlib import Path
 import uuid
 import zipfile
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils import timezone
 
 
 class Ticket(models.Model):
@@ -20,6 +23,8 @@ class Ticket(models.Model):
         HIGH = 'high', 'High'
         URGENT = 'urgent', 'Urgent'
 
+    SLA_HOURS = {Priority.URGENT: 4, Priority.HIGH: 8, Priority.MEDIUM: 24, Priority.LOW: 72}
+
     ticket_number = models.CharField(max_length=32, unique=True, editable=False)
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='customer_tickets')
     category = models.ForeignKey('categories.Category', on_delete=models.PROTECT, related_name='tickets')
@@ -31,6 +36,8 @@ class Ticket(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+    sla_due_at = models.DateTimeField(null=True, blank=True, editable=False)
+    sla_breached_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ['-created_at']
@@ -38,7 +45,26 @@ class Ticket(models.Model):
             models.Index(fields=['status', 'priority'], name='tkt_status_prio_idx'),
             models.Index(fields=['customer', 'created_at'], name='tkt_customer_date_idx'),
             models.Index(fields=['assigned_agent', 'status'], name='tkt_agent_status_idx'),
+            models.Index(fields=['sla_due_at', 'status'], name='tkt_sla_due_status_idx'),
         ]
+
+    @property
+    def is_sla_overdue(self):
+        return self.sla_due_at is not None and self.sla_due_at <= timezone.now() and self.status not in (self.Status.RESOLVED, self.Status.CLOSED)
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        recalculate_sla = self.sla_due_at is None or self._state.adding
+        if self.pk and not self._state.adding:
+            previous_priority = Ticket.objects.filter(pk=self.pk).values_list('priority', flat=True).first()
+            if previous_priority is not None and previous_priority != self.priority:
+                recalculate_sla = True
+        if recalculate_sla:
+            self.sla_due_at = timezone.now() + timedelta(hours=self.SLA_HOURS[self.priority])
+            self.sla_breached_at = None
+            if update_fields is not None:
+                kwargs['update_fields'] = set(update_fields) | {'sla_due_at', 'sla_breached_at'}
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.ticket_number or f'Ticket #{self.pk}'
@@ -57,12 +83,10 @@ def validate_attachment(file):
         raise ValidationError('Unsupported file type. Allowed: PDF, PNG, JPG, TXT, DOCX.')
     if file.size > 5 * 1024 * 1024:
         raise ValidationError('Attachment size must not exceed 5 MB.')
-
     try:
         file.seek(0)
         header = file.read(8)
         file.seek(0)
-
         if extension == '.pdf' and not header.startswith(b'%PDF-'):
             raise ValidationError('The uploaded file is not a valid PDF.')
         if extension == '.png' and header != b'\x89PNG\r\n\x1a\n':

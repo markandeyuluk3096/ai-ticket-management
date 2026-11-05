@@ -46,6 +46,29 @@ class CustomerRegistrationSecurityTests(APITestCase):
         self.assertTrue(user.check_password(password))
 
 
+class SuperuserRoleTests(APITestCase):
+    def test_new_superuser_receives_admin_application_role(self):
+        admin = User.objects.create_superuser(
+            username='role_admin',
+            email='role-admin@example.com',
+            password='Strong-Admin-Password-2026!',
+        )
+        self.assertTrue(admin.is_superuser)
+        self.assertTrue(admin.is_staff)
+        self.assertEqual(admin.role, 'admin')
+
+    def test_superuser_role_cannot_be_saved_as_customer(self):
+        admin = User.objects.create_superuser(
+            username='role_admin_two',
+            email='role-admin-two@example.com',
+            password='Strong-Admin-Password-2026!',
+        )
+        admin.role = 'customer'
+        admin.save()
+        admin.refresh_from_db()
+        self.assertEqual(admin.role, 'admin')
+
+
 class AuthenticationRateLimitTests(APITestCase):
     def setUp(self):
         cache.clear()

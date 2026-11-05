@@ -9,7 +9,7 @@ def promote_existing_superusers(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_alter_user_email'),
+        ('accounts', '0001_initial'),
     ]
 
     operations = [

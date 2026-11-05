@@ -8,6 +8,10 @@ User = get_user_model()
 class CustomerRegistrationSecurityTests(APITestCase):
     url = '/api/accounts/register/'
 
+    def setUp(self):
+        # Keep registration tests independent of cached throttle counters.
+        cache.clear()
+
     def test_registration_requires_email(self):
         response = self.client.post(self.url, {
             'username': 'new_customer',

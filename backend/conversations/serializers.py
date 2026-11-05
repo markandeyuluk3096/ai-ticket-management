@@ -1,4 +1,3 @@
-from pathlib import Path
 from rest_framework import serializers
 from .models import Message
 
@@ -16,10 +15,4 @@ class MessageSerializer(serializers.ModelSerializer):
         attachment = attrs.get('attachment')
         if not body.strip() and not attachment:
             raise serializers.ValidationError('A message must contain text or an attachment.')
-        if attachment:
-            if attachment.size > 5 * 1024 * 1024:
-                raise serializers.ValidationError({'attachment': 'Maximum attachment size is 5 MB.'})
-            allowed = {'.pdf', '.png', '.jpg', '.jpeg', '.txt', '.docx'}
-            if Path(attachment.name).suffix.lower() not in allowed:
-                raise serializers.ValidationError({'attachment': 'Unsupported file type.'})
         return attrs

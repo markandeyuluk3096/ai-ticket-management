@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from categories.models import Category
@@ -24,3 +25,12 @@ class ConversationAPITests(APITestCase):
         other_ticket = Ticket.objects.create(ticket_number='BILL-2026-0002', customer=self.other, category=self.category, subject='Other invoice', description='Private')
         response = self.client.get(f'/api/tickets/{other_ticket.pk}/messages/')
         self.assertEqual(response.status_code, 403)
+
+    def test_customer_cannot_upload_fake_pdf_in_message(self):
+        upload = SimpleUploadedFile('fake.pdf', b'not a PDF', content_type='application/pdf')
+        response = self.client.post(
+            f'/api/tickets/{self.ticket.pk}/messages/',
+            {'attachment': upload},
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, 400, response.data)

@@ -22,5 +22,11 @@ class User(AbstractUser):
         null=True
     )
 
+    def save(self, *args, **kwargs):
+        # Django superusers must also have the application's admin role.
+        if self.is_superuser:
+            self.role = 'admin'
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.username

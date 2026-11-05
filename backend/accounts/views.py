@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer
+from rest_framework_simplejwt.views import TokenBlacklistView
 
 
 class RegisterAPIView(APIView):
@@ -47,3 +48,23 @@ class CustomerProfileAPIView(APIView):
         serializer = ProfileSerializer(request.user)
 
         return Response(serializer.data)
+
+    def patch(self, request):
+
+        serializer = ProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+class CustomerLogoutAPIView(TokenBlacklistView):
+    pass

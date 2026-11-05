@@ -1,5 +1,10 @@
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenBlacklistSerializer,
+)
 
 User = get_user_model()
 
@@ -52,8 +57,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         return user
 
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
@@ -65,6 +68,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['role'] = user.role
 
         return token
+
 
 class ProfileSerializer(serializers.ModelSerializer):
 
@@ -80,3 +84,16 @@ class ProfileSerializer(serializers.ModelSerializer):
             'role',
         ]
         read_only_fields = ['id', 'username', 'role']
+
+    def validate_email(self, value):
+        if User.objects.filter(
+            email__iexact=value
+        ).exclude(
+            pk=self.instance.pk
+        ).exists():
+
+            raise serializers.ValidationError(
+                "This email address is already registered."
+            )
+
+        return value

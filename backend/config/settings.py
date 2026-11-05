@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'categories',
     'tickets',
     'conversations',
+    'faqs',
+    'notifications',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 ]

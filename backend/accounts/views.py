@@ -1,3 +1,5 @@
+from rest_framework.permissions import IsAuthenticated
+from .serializers import ProfileSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
@@ -35,3 +37,13 @@ class RegisterAPIView(APIView):
 
 class CustomLoginAPIView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+class CustomerProfileAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        serializer = ProfileSerializer(request.user)
+
+        return Response(serializer.data)

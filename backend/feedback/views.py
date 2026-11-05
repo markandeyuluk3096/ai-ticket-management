@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from tickets.models import Ticket
@@ -11,7 +12,7 @@ class TicketFeedbackCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         ticket_id = self.kwargs['ticket_id']
-        ticket = generics.get_object_or_404(Ticket, pk=ticket_id)
+        ticket = get_object_or_404(Ticket, pk=ticket_id)
         user = self.request.user
         if user.role != 'customer' or ticket.customer_id != user.id:
             raise PermissionDenied('Only the ticket owner can submit feedback.')

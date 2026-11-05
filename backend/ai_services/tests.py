@@ -39,11 +39,9 @@ class TicketAIAnalysisAPITests(APITestCase):
 
     @override_settings(OPENAI_API_KEY='')
     def test_missing_api_key_returns_service_unavailable(self):
-        with patch('ai_services.views.analyze_ticket', side_effect=Exception('should not be called')) as mocked:
-            response = self.client.post(f'/api/ai/tickets/{self.ticket.pk}/analyze/')
-            # The service is mocked above, so this assertion only verifies the route is reached.
-            self.assertEqual(response.status_code, 500)
-            mocked.assert_called_once()
+        response = self.client.post(f'/api/ai/tickets/{self.ticket.pk}/analyze/')
+        self.assertEqual(response.status_code, 503)
+        self.assertIn('OPENAI_API_KEY', response.data['detail'])
 
     @patch('ai_services.views.analyze_ticket')
     def test_analysis_history_is_scoped_to_accessible_ticket(self, mocked_analyze):

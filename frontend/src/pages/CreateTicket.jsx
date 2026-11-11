@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import CustomerLayout from '../layouts/CustomerLayout';
 import api from '../services/api';
 
 function CreateTicket() {
-  const { token } = useAuth();
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
@@ -20,9 +18,7 @@ function CreateTicket() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await api.get('categories/', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get('categories/');
         const data = response.data;
         setCategories(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
@@ -36,7 +32,7 @@ function CreateTicket() {
     };
 
     loadCategories();
-  }, [token]);
+  }, []);
 
   const handleChange = (event) => {
     setFormData((current) => ({
@@ -51,15 +47,11 @@ function CreateTicket() {
     setSubmitting(true);
 
     try {
-      await api.post(
-        'tickets/',
-        {
-          subject: formData.subject.trim(),
-          description: formData.description.trim(),
-          category_id: Number(formData.category_id),
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post('tickets/', {
+        subject: formData.subject.trim(),
+        description: formData.description.trim(),
+        category_id: Number(formData.category_id),
+      });
 
       navigate('/tickets', {
         state: { message: 'Your support ticket was created successfully.' },

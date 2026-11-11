@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import CustomerLayout from '../layouts/CustomerLayout';
 import api from '../services/api';
 
@@ -16,7 +15,6 @@ const readable = (value = '') =>
   value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 function MyTickets() {
-  const { token } = useAuth();
   const location = useLocation();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,10 +27,7 @@ function MyTickets() {
       setError('');
 
       try {
-        const response = await api.get('tickets/', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const response = await api.get('tickets/');
         const data = response.data;
         setTickets(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
@@ -46,7 +41,7 @@ function MyTickets() {
     };
 
     loadTickets();
-  }, [token]);
+  }, []);
 
   return (
     <CustomerLayout>

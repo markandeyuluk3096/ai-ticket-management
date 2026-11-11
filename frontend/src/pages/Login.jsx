@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,13 +10,11 @@ function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
 
     try {
@@ -26,7 +23,7 @@ function Login() {
         password,
       });
 
-      const accessToken = response.data.access;
+      const { access: accessToken, refresh: refreshToken } = response.data;
 
       const profileResponse = await api.get('accounts/profile/', {
         headers: {
@@ -34,10 +31,7 @@ function Login() {
         },
       });
 
-      login(profileResponse.data, accessToken);
-
-      setSuccess('Login successful! Welcome back.');
-
+      login(profileResponse.data, accessToken, refreshToken);
       navigate('/dashboard');
     } catch (err) {
       const data = err.response?.data;
@@ -55,7 +49,6 @@ function Login() {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-
         <h1 className="text-3xl font-bold text-center text-blue-600">
           AI Ticket Management
         </h1>
@@ -65,14 +58,8 @@ function Login() {
         </p>
 
         {error && (
-          <p className="bg-red-100 text-red-700 p-3 rounded-lg mt-5">
+          <p className="bg-red-100 text-red-700 p-3 rounded-lg mt-5" role="alert">
             {error}
-          </p>
-        )}
-
-        {success && (
-          <p className="bg-green-100 text-green-700 p-3 rounded-lg mt-5">
-            {success}
           </p>
         )}
 
@@ -86,6 +73,7 @@ function Login() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              autoComplete="username"
               className="w-full border rounded-lg p-3"
               placeholder="Enter your username"
             />
@@ -100,6 +88,7 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               className="w-full border rounded-lg p-3"
               placeholder="Enter your password"
             />
@@ -120,7 +109,6 @@ function Login() {
             Register
           </Link>
         </p>
-
       </div>
     </div>
   );

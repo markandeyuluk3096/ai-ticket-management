@@ -1,3 +1,7 @@
 @import "tailwindcss";
 
-@source "./";
+/* Explicit source paths keep Tailwind v4 utility detection predictable. */
+@source "./pages";
+@source "./layouts";
+@source "./components";
+@source "./context";

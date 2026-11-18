@@ -22,6 +22,8 @@ class User(AbstractUser):
         null=True
     )
 
+    google_sub = models.CharField(max_length=255, unique=True, blank=True, null=True)
+
     def save(self, *args, **kwargs):
         # Django superusers must also have the application's admin role.
         if self.is_superuser:

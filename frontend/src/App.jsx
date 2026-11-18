@@ -19,6 +19,12 @@ function DashboardHome() {
   return <Dashboard />;
 }
 
+function TicketsHome() {
+  const { user } = useAuth();
+  if (user?.role === 'agent' || user?.role === 'admin') return <StaffDashboard />;
+  return <MyTickets />;
+}
+
 function App() {
   return (
     <Routes>
@@ -26,7 +32,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
-      <Route path="/tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+      <Route path="/tickets" element={<ProtectedRoute><TicketsHome /></ProtectedRoute>} />
       <Route path="/tickets/new" element={<ProtectedRoute allowedRoles={['customer']}><CreateTicket /></ProtectedRoute>} />
       <Route path="/tickets/:ticketId" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
       <Route path="/faqs" element={<ProtectedRoute><FAQs /></ProtectedRoute>} />

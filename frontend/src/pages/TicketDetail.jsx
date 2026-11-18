@@ -16,6 +16,8 @@ function TicketDetail() {
   const [body, setBody] = useState('');
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
+  const [agents, setAgents] = useState([]);
+  const [assignedAgent, setAssignedAgent] = useState('');
   const [rating, setRating] = useState('5');
   const [comment, setComment] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -28,13 +30,14 @@ function TicketDetail() {
     setLoading(true);
     setError('');
     try {
-      const [ticketResponse, messageResponse] = await Promise.all([
-        api.get(`tickets/${ticketId}/`),
-        api.get(`tickets/${ticketId}/messages/`),
-      ]);
+      const requests = [api.get(`tickets/${ticketId}/`), api.get(`tickets/${ticketId}/messages/`)];
+      if (user?.role === 'admin') requests.push(api.get('accounts/agents/'));
+      const [ticketResponse, messageResponse, agentsResponse] = await Promise.all(requests);
       setTicket(ticketResponse.data);
       setStatus(ticketResponse.data.status);
       setPriority(ticketResponse.data.priority);
+      setAssignedAgent(ticketResponse.data.assigned_agent ? String(ticketResponse.data.assigned_agent) : '');
+      if (agentsResponse) setAgents(agentsResponse.data);
       const data = messageResponse.data;
       setMessages(Array.isArray(data) ? data : data.results || []);
     } catch (err) {
@@ -44,7 +47,7 @@ function TicketDetail() {
     }
   };
 
-  useEffect(() => { load(); }, [ticketId]);
+  useEffect(() => { load(); }, [ticketId, user?.role]);
 
   const sendReply = async (event) => {
     event.preventDefault();
@@ -61,8 +64,13 @@ function TicketDetail() {
   const saveChanges = async (event) => {
     event.preventDefault();
     try {
-      const response = await api.patch(`tickets/${ticketId}/`, { status, priority });
-      setTicket((current) => ({ ...current, ...response.data }));
+      await api.patch(`tickets/${ticketId}/`, {
+        status,
+        priority,
+        ...(user?.role === 'admin' ? { assigned_agent: assignedAgent || null } : {}),
+      });
+      const refreshed = await api.get(`tickets/${ticketId}/`);
+      setTicket(refreshed.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Unable to update this ticket.');
     }
@@ -124,6 +132,7 @@ function TicketDetail() {
         {isStaff && <form onSubmit={saveChanges} className="mt-5 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-5">
           <label className="text-sm font-medium text-slate-700">Status<select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-2 block rounded-lg border border-slate-300 px-3 py-2">{statuses.map((value) => <option key={value} value={value}>{label(value)}</option>)}</select></label>
           <label className="text-sm font-medium text-slate-700">Priority<select value={priority} onChange={(event) => setPriority(event.target.value)} className="mt-2 block rounded-lg border border-slate-300 px-3 py-2">{priorities.map((value) => <option key={value} value={value}>{label(value)}</option>)}</select></label>
+          {user?.role === 'admin' && <label className="text-sm font-medium text-slate-700">Assign agent<select value={assignedAgent} onChange={(event) => setAssignedAgent(event.target.value)} className="mt-2 block rounded-lg border border-slate-300 px-3 py-2"><option value="">Unassigned</option>{agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.first_name || agent.username} (@{agent.username})</option>)}</select></label>}
           <button className="rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white">Save changes</button>
         </form>}
 

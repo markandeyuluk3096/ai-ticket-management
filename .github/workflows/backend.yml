@@ -69,3 +69,16 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
+
+      - name: Verify Tailwind utility generation
+        working-directory: frontend
+        shell: bash
+        run: |
+          css_file="$(find dist/assets -maxdepth 1 -name '*.css' -print -quit)"
+          test -n "$css_file"
+          for utility in '.min-h-screen' '.bg-slate-100' '.text-blue-600'; do
+            if ! grep -Fq "$utility" "$css_file"; then
+              echo "Missing Tailwind utility in production CSS: $utility"
+              exit 1
+            fi
+          done

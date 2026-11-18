@@ -19,6 +19,8 @@ function TicketDetail() {
   const [rating, setRating] = useState('5');
   const [comment, setComment] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -60,9 +62,22 @@ function TicketDetail() {
     event.preventDefault();
     try {
       const response = await api.patch(`tickets/${ticketId}/`, { status, priority });
-      setTicket(response.data);
+      setTicket((current) => ({ ...current, ...response.data }));
     } catch (err) {
       setError(err.response?.data?.detail || 'Unable to update this ticket.');
+    }
+  };
+
+  const runAnalysis = async () => {
+    setAnalysisLoading(true);
+    setError('');
+    try {
+      const response = await api.post(`ai/tickets/${ticketId}/analyze/`);
+      setAnalysis(response.data.result);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'AI analysis is unavailable. Check the OpenAI API configuration.');
+    } finally {
+      setAnalysisLoading(false);
     }
   };
 
@@ -100,6 +115,11 @@ function TicketDetail() {
             <p><span className="text-slate-500">SLA due:</span> <strong>{ticket.sla_due_at ? new Date(ticket.sla_due_at).toLocaleString() : '—'}</strong></p>
           </div>
         </div>
+
+        {isStaff && <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold text-slate-900">AI ticket analysis</h2><p className="mt-1 text-sm text-slate-500">Generate a triage suggestion for the support team.</p></div><button type="button" onClick={runAnalysis} disabled={analysisLoading} className="rounded-lg bg-indigo-600 px-4 py-2.5 font-semibold text-white disabled:opacity-50">{analysisLoading ? 'Analyzing...' : 'Analyze ticket'}</button></div>
+          {analysis && <div className="mt-4 grid gap-3 sm:grid-cols-2"><p className="rounded-lg bg-slate-50 p-3 text-sm"><strong>Suggested category:</strong> {analysis.category || 'Not determined'}</p><p className="rounded-lg bg-slate-50 p-3 text-sm"><strong>Suggested priority:</strong> {label(analysis.priority)}</p><p className="rounded-lg bg-slate-50 p-3 text-sm"><strong>Sentiment:</strong> {label(analysis.sentiment)}</p><p className="rounded-lg bg-slate-50 p-3 text-sm sm:col-span-2"><strong>Summary:</strong> {analysis.summary}</p><p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900 sm:col-span-2"><strong>Suggested reply (review before sending):</strong><br />{analysis.suggested_response}</p></div>}
+        </section>}
 
         {isStaff && <form onSubmit={saveChanges} className="mt-5 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-5">
           <label className="text-sm font-medium text-slate-700">Status<select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-2 block rounded-lg border border-slate-300 px-3 py-2">{statuses.map((value) => <option key={value} value={value}>{label(value)}</option>)}</select></label>

@@ -116,6 +116,7 @@ REST_FRAMEWORK = {
         'ai_chat': '20/hour',
         'register': '5/hour',
         'login': '10/minute',
+        'google_login': '10/minute',
     },
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -126,6 +127,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),

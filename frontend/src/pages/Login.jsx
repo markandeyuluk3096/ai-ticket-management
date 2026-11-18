@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 function Login() {
   const { login } = useAuth();
@@ -102,6 +103,9 @@ function Login() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+
+        <div className="mt-6 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" /><span>OR</span><span className="h-px flex-1 bg-slate-200" /></div>
+        <GoogleSignInButton />
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Don't have an account?{' '}

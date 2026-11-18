@@ -11,6 +11,7 @@ import FAQs from './pages/FAQs';
 import AIChat from './pages/AIChat';
 import Notifications from './pages/Notifications';
 import AdminReports from './pages/AdminReports';
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function DashboardHome() {
@@ -38,6 +39,7 @@ function App() {
       <Route path="/faqs" element={<ProtectedRoute><FAQs /></ProtectedRoute>} />
       <Route path="/chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

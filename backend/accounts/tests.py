@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -93,3 +94,64 @@ class AuthenticationRateLimitTests(APITestCase):
 
         response = self.client.post('/api/accounts/login/', payload, format='json')
         self.assertEqual(response.status_code, 429)
+
+
+from unittest.mock import patch
+from django.test import override_settings
+
+
+class GoogleLoginAPITests(APITestCase):
+    url = '/api/accounts/google/'
+
+    def setUp(self):
+        cache.clear()
+
+    @patch('accounts.views.google_id_token.verify_oauth2_token')
+    @override_settings(GOOGLE_CLIENT_ID='test-google-client.apps.googleusercontent.com')
+    def test_verified_google_user_can_sign_in(self, verify_token):
+        verify_token.return_value = {
+            'sub': 'google-sub-123',
+            'email': 'google.user@example.com',
+            'email_verified': True,
+            'given_name': 'Google',
+            'family_name': 'User',
+        }
+        response = self.client.post(self.url, {'credential': 'valid-test-token'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+        user = User.objects.get(email='google.user@example.com')
+        self.assertEqual(user.role, 'customer')
+        self.assertEqual(user.google_sub, 'google-sub-123')
+
+    @patch('accounts.views.google_id_token.verify_oauth2_token')
+    @override_settings(GOOGLE_CLIENT_ID='test-google-client.apps.googleusercontent.com')
+    def test_unverified_google_email_is_rejected(self, verify_token):
+        verify_token.return_value = {
+            'sub': 'google-sub-unverified',
+            'email': 'unverified@example.com',
+            'email_verified': False,
+        }
+        response = self.client.post(self.url, {'credential': 'unverified-token'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(User.objects.filter(email='unverified@example.com').exists())
+
+    @override_settings(GOOGLE_CLIENT_ID='')
+    def test_google_sign_in_requires_server_client_id(self):
+        response = self.client.post(self.url, {'credential': 'token'}, format='json')
+        self.assertEqual(response.status_code, 503)
+
+
+class AgentDirectoryAPITests(APITestCase):
+    def test_only_admin_can_list_support_agents(self):
+        agent = User.objects.create_user(username='directory_agent', password='StrongPass123!', role='agent')
+        customer = User.objects.create_user(username='directory_customer', password='StrongPass123!')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(customer).access_token}')
+        denied = self.client.get('/api/accounts/agents/')
+        self.assertEqual(denied.status_code, 403)
+
+        admin = User.objects.create_user(username='directory_admin', password='StrongPass123!', role='admin')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(admin).access_token}')
+        allowed = self.client.get('/api/accounts/agents/')
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual([item['id'] for item in allowed.data], [agent.id])

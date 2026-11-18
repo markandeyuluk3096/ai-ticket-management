@@ -3,13 +3,18 @@ from django.db.models import Count, Avg
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import BasePermission
 from tickets.models import Ticket
 from feedback.models import TicketFeedback
 
 
+class IsSupportAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role == 'admin')
+
+
 class AdminDashboardReportAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsSupportAdmin]
 
     def get(self, request):
         today = timezone.localdate()

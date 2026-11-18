@@ -14,6 +14,7 @@ function TicketDetail() {
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [body, setBody] = useState('');
+  const [attachment, setAttachment] = useState(null);
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [agents, setAgents] = useState([]);
@@ -51,11 +52,17 @@ function TicketDetail() {
 
   const sendReply = async (event) => {
     event.preventDefault();
-    if (!body.trim()) return;
+    if (!body.trim() && !attachment) return;
     try {
-      const response = await api.post(`tickets/${ticketId}/messages/`, { body: body.trim() });
+      const payload = new FormData();
+      if (body.trim()) payload.append('body', body.trim());
+      if (attachment) payload.append('attachment', attachment);
+      const response = await api.post(`tickets/${ticketId}/messages/`, payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setMessages((current) => [...current, response.data]);
       setBody('');
+      setAttachment(null);
     } catch (err) {
       setError(err.response?.data?.detail || 'Unable to send your reply.');
     }
@@ -144,12 +151,13 @@ function TicketDetail() {
             {messages.map((item) => <article key={item.id} className="rounded-lg bg-slate-50 p-4">
               <div className="flex flex-wrap justify-between gap-2"><strong className="text-sm text-slate-800">{item.sender_username || 'Support'}</strong><span className="text-xs text-slate-400">{new Date(item.created_at).toLocaleString()}</span></div>
               {item.body && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{item.body}</p>}
+              {item.attachment && <a href={item.attachment} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-semibold text-blue-600 hover:underline">View attachment</a>}
             </article>)}
             {messages.length === 0 && <p className="text-sm text-slate-500">No replies yet. Send the first message below.</p>}
           </div>
           <form onSubmit={sendReply} className="mt-5 space-y-3">
             <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={3} maxLength={5000} className="w-full rounded-lg border border-slate-300 p-3" placeholder="Write a reply..." />
-            <button disabled={!body.trim()} className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-50">Send reply</button>
+            <div className="flex flex-wrap items-center justify-between gap-3"><label className="text-sm text-slate-600">Attach file (PDF, PNG, JPG, TXT, DOCX; max 5 MB)<input type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.docx" onChange={(event) => setAttachment(event.target.files?.[0] || null)} className="mt-2 block max-w-full text-sm" /></label><button disabled={!body.trim() && !attachment} className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-50" >Send reply</button></div>
           </form>
         </section>
 

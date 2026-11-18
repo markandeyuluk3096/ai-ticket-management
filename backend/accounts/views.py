@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.exceptions import PermissionDenied
 
 User = get_user_model()
 
@@ -113,6 +114,18 @@ class GoogleLoginAPIView(APIView):
             {'refresh': str(refresh), 'access': str(refresh.access_token)},
             status=status.HTTP_200_OK,
         )
+
+
+class AgentListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'admin':
+            raise PermissionDenied('Only administrators can view the support-agent directory.')
+        agents = User.objects.filter(role='agent', is_active=True).values(
+            'id', 'username', 'first_name', 'last_name'
+        )
+        return Response(list(agents))
 
 
 class CustomerProfileAPIView(APIView):

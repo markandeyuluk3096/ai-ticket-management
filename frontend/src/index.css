@@ -1,7 +1,7 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../src");
 
-/* Explicit source paths keep Tailwind v4 utility detection predictable. */
-@source "./pages";
-@source "./layouts";
-@source "./components";
-@source "./context";
+/*
+ * Pin Tailwind's scan root to frontend/src.
+ * The stylesheet lives in src/, so ../src resolves to this entire source tree.
+ * This keeps utility generation independent of the terminal's working directory.
+ */

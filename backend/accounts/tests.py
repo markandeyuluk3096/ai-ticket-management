@@ -139,3 +139,18 @@ class GoogleLoginAPITests(APITestCase):
     def test_google_sign_in_requires_server_client_id(self):
         response = self.client.post(self.url, {'credential': 'token'}, format='json')
         self.assertEqual(response.status_code, 503)
+
+
+class AgentDirectoryAPITests(APITestCase):
+    def test_only_admin_can_list_support_agents(self):
+        agent = User.objects.create_user(username='directory_agent', password='StrongPass123!', role='agent')
+        customer = User.objects.create_user(username='directory_customer', password='StrongPass123!')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(customer).access_token}')
+        denied = self.client.get('/api/accounts/agents/')
+        self.assertEqual(denied.status_code, 403)
+
+        admin = User.objects.create_user(username='directory_admin', password='StrongPass123!', role='admin')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(admin).access_token}')
+        allowed = self.client.get('/api/accounts/agents/')
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual([item['id'] for item in allowed.data], [agent.id])

@@ -57,9 +57,7 @@ function TicketDetail() {
       const payload = new FormData();
       if (body.trim()) payload.append('body', body.trim());
       if (attachment) payload.append('attachment', attachment);
-      const response = await api.post(`tickets/${ticketId}/messages/`, payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await api.post(`tickets/${ticketId}/messages/`, payload);
       setMessages((current) => [...current, response.data]);
       setBody('');
       setAttachment(null);

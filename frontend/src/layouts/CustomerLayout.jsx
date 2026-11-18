@@ -20,6 +20,7 @@ function CustomerLayout({ children }) {
             <NavLink to="/faqs" className={linkClass}>FAQs</NavLink>
             <NavLink to="/chat" className={linkClass}>AI Assistant</NavLink>
             <NavLink to="/notifications" className={linkClass}>Notifications</NavLink>
+            <NavLink to="/profile" className={linkClass}>Profile</NavLink>
             {isAdmin && <NavLink to="/admin/reports" className={linkClass}>Reports</NavLink>}
           </nav>
           <div className="flex items-center gap-3">

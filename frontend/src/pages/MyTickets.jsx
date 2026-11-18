@@ -107,7 +107,7 @@ function MyTickets() {
                 {tickets.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-slate-800">{ticket.subject}</p>
+                      <Link to={`/tickets/${ticket.id}`} className="font-semibold text-blue-700 hover:underline">{ticket.subject}</Link>
                       <p className="mt-1 text-xs text-slate-500">{ticket.ticket_number}</p>
                     </td>
                     <td className="px-6 py-4 text-slate-600">{ticket.category_name || '—'}</td>

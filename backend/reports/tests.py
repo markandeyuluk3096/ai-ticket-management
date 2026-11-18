@@ -40,7 +40,7 @@ class AdminReportAPITests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_admin_can_access_dashboard_report(self):
-        admin = User.objects.create_user(username='report_admin', password='StrongPass123!', role='admin', is_staff=True)
+        admin = User.objects.create_user(username='report_admin', password='StrongPass123!', role='admin', is_staff=False)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(admin).access_token}')
         response = self.client.get('/api/reports/dashboard/')
         self.assertEqual(response.status_code, 200)

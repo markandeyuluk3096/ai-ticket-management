@@ -93,3 +93,49 @@ class AuthenticationRateLimitTests(APITestCase):
 
         response = self.client.post('/api/accounts/login/', payload, format='json')
         self.assertEqual(response.status_code, 429)
+
+
+from unittest.mock import patch
+from django.test import override_settings
+
+
+class GoogleLoginAPITests(APITestCase):
+    url = '/api/accounts/google/'
+
+    def setUp(self):
+        cache.clear()
+
+    @patch('accounts.views.google_id_token.verify_oauth2_token')
+    @override_settings(GOOGLE_CLIENT_ID='test-google-client.apps.googleusercontent.com')
+    def test_verified_google_user_can_sign_in(self, verify_token):
+        verify_token.return_value = {
+            'sub': 'google-sub-123',
+            'email': 'google.user@example.com',
+            'email_verified': True,
+            'given_name': 'Google',
+            'family_name': 'User',
+        }
+        response = self.client.post(self.url, {'credential': 'valid-test-token'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+        user = User.objects.get(email='google.user@example.com')
+        self.assertEqual(user.role, 'customer')
+        self.assertEqual(user.google_sub, 'google-sub-123')
+
+    @patch('accounts.views.google_id_token.verify_oauth2_token')
+    @override_settings(GOOGLE_CLIENT_ID='test-google-client.apps.googleusercontent.com')
+    def test_unverified_google_email_is_rejected(self, verify_token):
+        verify_token.return_value = {
+            'sub': 'google-sub-unverified',
+            'email': 'unverified@example.com',
+            'email_verified': False,
+        }
+        response = self.client.post(self.url, {'credential': 'unverified-token'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(User.objects.filter(email='unverified@example.com').exists())
+
+    @override_settings(GOOGLE_CLIENT_ID='')
+    def test_google_sign_in_requires_server_client_id(self):
+        response = self.client.post(self.url, {'credential': 'token'}, format='json')
+        self.assertEqual(response.status_code, 503)

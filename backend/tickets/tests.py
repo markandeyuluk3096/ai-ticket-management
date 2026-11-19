@@ -79,3 +79,75 @@ class TicketAutomationAPITests(APITestCase):
         upload = SimpleUploadedFile('fake.docx', b'not a zip document', content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         response = self.client.post(f'/api/tickets/{self.ticket.pk}/attachments/', {'file': upload}, format='multipart')
         self.assertEqual(response.status_code, 400)
+
+
+class TicketStaffPermissionAPITests(APITestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username='staff_test_customer', password='StrongPass123!')
+        self.agent = User.objects.create_user(username='staff_test_agent', password='StrongPass123!', role='agent')
+        self.other_agent = User.objects.create_user(username='staff_test_other_agent', password='StrongPass123!', role='agent')
+        self.admin = User.objects.create_user(username='staff_test_admin', password='StrongPass123!', role='admin')
+        self.category = Category.objects.create(name='Staff Test', code='STF')
+        self.ticket = Ticket.objects.create(
+            ticket_number=f'STF-{timezone.localdate().year}-0001',
+            customer=self.customer,
+            category=self.category,
+            subject='Staff workflow test',
+            description='Test agent access and assignment permissions.',
+            assigned_agent=self.agent,
+        )
+
+    def authenticate(self, user):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(user).access_token}')
+
+    def test_assigned_agent_can_update_ticket_status_and_priority(self):
+        self.authenticate(self.agent)
+        response = self.client.patch(
+            f'/api/tickets/{self.ticket.pk}/',
+            {'status': 'in_progress', 'priority': 'high'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, 'in_progress')
+        self.assertEqual(self.ticket.priority, 'high')
+
+    def test_assigned_agent_cannot_reassign_ticket(self):
+        self.authenticate(self.agent)
+        response = self.client.patch(
+            f'/api/tickets/{self.ticket.pk}/',
+            {'assigned_agent': self.other_agent.pk},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400, response.data)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.assigned_agent_id, self.agent.pk)
+
+    def test_unassigned_agent_cannot_read_or_update_ticket(self):
+        self.authenticate(self.other_agent)
+        response = self.client.get(f'/api/tickets/{self.ticket.pk}/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_agent_queue_contains_only_assigned_tickets(self):
+        Ticket.objects.create(
+            ticket_number=f'STF-{timezone.localdate().year}-0002',
+            customer=self.customer,
+            category=self.category,
+            subject='Unassigned test ticket',
+            description='This ticket is not assigned to this agent.',
+        )
+        self.authenticate(self.agent)
+        response = self.client.get('/api/tickets/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item['id'] for item in response.data['results']], [self.ticket.pk])
+
+    def test_administrator_can_assign_ticket_to_agent(self):
+        self.authenticate(self.admin)
+        response = self.client.patch(
+            f'/api/tickets/{self.ticket.pk}/',
+            {'assigned_agent': self.other_agent.pk},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.assigned_agent_id, self.other_agent.pk)

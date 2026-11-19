@@ -45,6 +45,9 @@ class TicketStaffUpdateSerializer(serializers.ModelSerializer):
         fields = ['status', 'priority', 'assigned_agent']
 
     def validate_assigned_agent(self, user):
+        request = self.context.get('request')
+        if request and request.user.role != 'admin':
+            raise serializers.ValidationError('Only administrators can reassign tickets.')
         if user and user.role not in ('agent', 'admin'):
             raise serializers.ValidationError('Tickets can only be assigned to a support agent or administrator.')
         return user

@@ -20,3 +20,5 @@ media/
 # Operating system files
 .DS_Store
 Thumbs.db
+# Collected Django static files
+staticfiles/
